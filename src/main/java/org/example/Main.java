@@ -1,69 +1,50 @@
 package org.example;
-
 import java.io.*;
-import java.text.DecimalFormat;
-import java.io.FileNotFoundException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.OptionalDouble;
+import MyPackage.MovieUtils;
+import MyPackage.Movie;
 
+/**
+* The program asks you to enter a movie id, from which it will search a movie name and then 
+* calculate an average rating
+ */
 public class Main {
-    public static void main(String[] args) throws NullPointerException, RuntimeException {
-        System.out.println("Hello world!");
+    public static void main(String[] args) throws NullPointerException, RuntimeException, FileNotFoundException, IOException {
+
         String COMMA_DELIMITER = ",";
-        List<List<String>> records = new ArrayList<>();
-        try (BufferedReader br = new BufferedReader(new FileReader("Dateien/movies.csv"))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] values = line.split(   COMMA_DELIMITER);
-                records.add(Arrays.asList(values));
+        String MOVIEPATH = "Dateien/movies.csv";
+        String RATINGPATH = "Dateien/ratings.csv";
+
+        try {
+            List<List<String>> movieData  = MovieUtils.ReadFile(COMMA_DELIMITER, MOVIEPATH);
+            List<List<String>> ratingData = MovieUtils.ReadFile(COMMA_DELIMITER, RATINGPATH);
+
+            System.out.println("Bitte geben Sie die Filenummer ein, zu der Sie eine Bewertung wünschen");
+            
+            BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
+            String searchMovieId = userInput.readLine();
+            Movie movieObject = new Movie(movieData, ratingData, searchMovieId);
+            
+            String movieName = movieObject.searchAttributeOnMovie(0, 1);
+            movieObject.setMovieName(movieName);
+            
+            if (movieName.isEmpty()) {
+                System.out.println("Es wurde der Film: keiner ausgewählt."); 
             }
+            else {
+                System.out.println("Es wurde der Film: " + movieName + " ausgewählt."); 
+                OptionalDouble ratingMean = movieObject.searchMeanRating(1, 2);
+                movieObject.setMovieRating(ratingMean);
 
-            System.out.println("Bitte geben Sie die Filmnummer ein, zu der Sie eine Bewertung wünschen");
-            BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(System.in));
-
-            String name = reader.readLine();
-
-            if (name != "") {
-                for (List<String> record : records) {
-                    String gefundenerRecord = "keiner";
-                    if (record.toArray()[0].equals(name)) {
-                        System.out.println("Es wurde der Film: " + record.toArray()[1] + " ausgewählt.");
-                        gefundenerRecord = record.toArray()[0].toString();
-                    }
-
-            if (gefundenerRecord.equals("keiner")) {
-                // nichts zu tun
-            } else {
-                List<List<String>> records2 = new ArrayList<>();
-                try (BufferedReader br2 = new BufferedReader(new FileReader("Dateien/ratings.csv"))) {
-                    String zeile;
-                    while ((zeile = br2.readLine()) != null) {
-                        String[] values = zeile.split(  COMMA_DELIMITER);
-                        records2.add(Arrays.asList(values));
-                    }
-
-                            System.out.println(gefundenerRecord);
-                    double gesamt = 0;
-                    int iterator = 0;
-                    for (List<String> record2 : records2) {
-                        if (record2.toArray()[1].toString().equals(gefundenerRecord)) {
-                            gesamt = gesamt + Double.parseDouble(record2.toArray()[2].toString());
-                            ++iterator;
-                        }
-                    }
-                    DecimalFormat f = new DecimalFormat("#0.00");
-                    System.out.println("Die Bewertung für den Film ist: " + f.format(gesamt / iterator));
-
-                } catch (Exception e) {
-                    throw e;
-                }
+                System.out.println("Die Bewertung für den Film ist: " + movieObject.getMovieRating());
             }
-                }
-            }
-        } catch (Exception e) {
-            System.out.println("No File Found");
+        } 
+        catch (FileNotFoundException e) {
+            System.err.println("Error finding/parsing one of the files: " + MOVIEPATH + "; " + RATINGPATH);
+        }
+        catch (IOException e) {
+            System.err.println("Error reading user input.");
         }
     }
 }
